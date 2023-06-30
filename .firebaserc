@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "inventory-d308c",
-    "prod": "inventory-object"
+    "default": "inventory-object"
   },
   "targets": {},
   "etags": {}
