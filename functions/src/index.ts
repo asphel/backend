@@ -2,23 +2,33 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as vision from "@google-cloud/vision";
 
+admin.initializeApp();
 // Initialise le client Cloud Vision
 const client = new vision.ImageAnnotatorClient();
 
-// Initialise Firebase Admin
-admin.initializeApp();
+const db = admin.firestore();
+
 
 // Firebase Function déclenchée lors de l'upload d'une image
 export const processImage = functions.storage.object().onFinalize(
   async (object) => {
+    const collectionName = "Analysis";
+
     const fileBucket = object.bucket;
     const filePath = object.name;
+
+    interface Score {
+      tag : string,
+      score : number
+    }
+
+    const scores : Score[] = [];
 
     // Vérifiez si l'objet est une image
     if (!filePath || (!filePath.endsWith(".jpg") &&
   !filePath.endsWith(".jpeg") &&
   !filePath.endsWith(".png"))) {
-      console.log("Le fichier n'est pas une image ou filePath est null.");
+      functions.logger.error("filePath est null.");
       return null;
     }
 
@@ -32,36 +42,37 @@ export const processImage = functions.storage.object().onFinalize(
       // Traitez les résultats
         if (webDetection.fullMatchingImages &&
             webDetection.fullMatchingImages.length > 0) {
-          console.log("*****************************************");
+          functions.logger.info(`*** Web detection for ${filePath} ***`);
           const entities = webDetection.webEntities;
-          if (entities) {
-            for (const entity of entities) {
-              const description = entity.description?.toLocaleLowerCase();
-              if (entity.score && entity.score > 0.5) {
-                console.log(`Label : ${description}`);
+
+          if (entities && entities.length) {
+            functions.logger.info(`Web entities found: ${entities.length}`);
+            entities.forEach((entity) => {
+              if (entity.description && entity.score) {
+                functions.logger.info(` Description : ${entity.description}`);
+                functions.logger.info(` Score: ${entity.score}`);
+                const score = {
+                  tag: entity.description,
+                  score: entity.score,
+                };
+                scores.push(score);
               }
-              if (entity.entityId && entity.entityId.startsWith("/m/")) {
-                console.log(`Types : ${description}`);
-              } else if (entity.description?.length &&
-                entity.description?.length >= 2) {
-                console.log(`Brands : ${description}`);
-              }
-            }
+            });
           }
-
-
-          console.log("Images correspondantes :");
-          webDetection.fullMatchingImages.forEach((image) => {
-            console.log(` URL : ${image.url}`);
-          });
-        } else {
-          console.log("Aucune image correspondante trouvée.");
         }
-      } else {
-        console.log("Aucune détection effectuée.");
       }
+
+
+      const entry = db.collection(collectionName).doc();
+
+      const entryObject = {
+        fileName: filePath,
+        tags: scores,
+      };
+
+      entry.set(entryObject);
     } catch (error) {
-      console.error("Erreur lors de l'appel de l'API Web Detection:", error);
+      functions.logger.error("Web Detection Error:", error);
     }
 
     return null;
