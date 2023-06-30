@@ -15,12 +15,17 @@ export const processImage = functions.storage.object().onFinalize(
     const collectionName = "Analysis";
 
     const fileBucket = object.bucket;
-    const filePath = object.name;
+    const filePath = object.name? object.name : "undefined";
 
     interface Score {
       tag : string,
       score : number
     }
+
+    const entry = db.collection(collectionName).doc(filePath);
+    entry.set({
+      isAnalysed: false,
+    });
 
     const scores : Score[] = [];
 
@@ -62,15 +67,9 @@ export const processImage = functions.storage.object().onFinalize(
         }
       }
 
-
-      const entry = db.collection(collectionName).doc();
-
-      const entryObject = {
-        fileName: filePath,
+      entry.set({
         tags: scores,
-      };
-
-      entry.set(entryObject);
+        isAnalysed: true});
     } catch (error) {
       functions.logger.error("Web Detection Error:", error);
     }
