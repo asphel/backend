@@ -29,6 +29,8 @@ export const processImage = functions.storage.object().onFinalize(
 
     const scores : Score[] = [];
 
+    functions.logger.error("************* MAMAN **********");
+
     // Vérifiez si l'objet est une image
     if (!filePath || (!filePath.endsWith(".jpg") &&
   !filePath.endsWith(".jpeg") &&
