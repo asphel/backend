@@ -30,7 +30,7 @@ export const processImage = functions.storage.object().onFinalize(
 
       const scores: Score[] = [];
 
-      functions.logger.info(`************* MAMAN **********${fileBucket}/${filePath}`);
+      functions.logger.info(`***** MAMAN *****${fileBucket}/${filePath}`);
 
       // Vérifiez si l'objet est une image
       if (!filePath || (!filePath.endsWith(".jpg") &&
