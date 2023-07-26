@@ -71,7 +71,7 @@ export const processImage = functions.storage.object().onFinalize(
 
       entry.set({
         tags: scores,
-        isAnalysed: true
+        isAnalysed: true,
       });
 
       return null;
