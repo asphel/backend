@@ -65,7 +65,11 @@ export const processImage = functions.storage.object().onFinalize(
                 scores.push(score);
               }
             });
+          } else {
+            functions.logger.info("entities is null or length = 0");
           }
+        } else {
+          functions.logger.info("fullMatchingImages is null or < 0");
         }
       } else {
         functions.logger.info("Web Detection is null");
