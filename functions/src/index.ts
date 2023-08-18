@@ -67,8 +67,7 @@ export const processImage = functions.storage.object().onFinalize(
             });
           }
         }
-      }
-      else {
+      } else {
         functions.logger.info("Web Detection is null");
       }
 
