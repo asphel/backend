@@ -68,6 +68,9 @@ export const processImage = functions.storage.object().onFinalize(
           }
         }
       }
+      else {
+        functions.logger.info("Web Detection is null");
+      }
 
       entry.set({
         tags: scores,
