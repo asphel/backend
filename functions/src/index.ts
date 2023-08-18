@@ -28,11 +28,11 @@ export const processImage = functions.storage.object().onFinalize(
         isAnalysed: false,
       });
 
-      const scores: Score[] = [];
+      const fullMatchingScores : Score[] = [];
+      const partialMatchingScores : Score[] = [];
+      const entityScores : Score[] = [];
 
-      functions.logger.info(`***** MAMAN *****${fileBucket}/${filePath}`);
-
-      // Vérifiez si l'objet est une image
+      // Vérifiez si l'objet est une image jpg ou png
       if (!filePath || (!filePath.endsWith(".jpg") &&
         !filePath.endsWith(".jpeg") &&
         !filePath.endsWith(".png"))) {
@@ -44,39 +44,72 @@ export const processImage = functions.storage.object().onFinalize(
       const [result] = await client.webDetection(`gs://${fileBucket}/${filePath}`);
       const webDetection = result?.webDetection;
 
-      // Vérifiez si des résultats de détection sont disponibles
       if (webDetection) {
-        // Traitez les résultats
+        const entities = webDetection.webEntities;
+        functions.logger.info(`*** Web detection for 
+        ${fileBucket}/${filePath} ***`);
+
         if (webDetection.fullMatchingImages &&
           webDetection.fullMatchingImages.length > 0) {
-          functions.logger.info(`*** Web detection for ${filePath} ***`);
-          const entities = webDetection.webEntities;
-
-          if (entities && entities.length) {
-            functions.logger.info(`Web entities found: ${entities.length}`);
-            entities.forEach((entity) => {
-              if (entity.description && entity.score) {
-                functions.logger.info(` Description : ${entity.description}`);
-                functions.logger.info(` Score: ${entity.score}`);
-                const score = {
-                  tag: entity.description,
-                  score: entity.score,
-                };
-                scores.push(score);
-              }
-            });
-          } else {
-            functions.logger.info("entities is null or length = 0");
-          }
+          functions.logger.info("*** Full Matching Images detected ***");
+          webDetection.fullMatchingImages.forEach((matchingImage) => {
+            if (matchingImage.url && matchingImage.score) {
+              functions.logger.info(` URL : ${matchingImage.url}`);
+              functions.logger.info(` Score: ${matchingImage.score}`);
+              const score = {
+                tag: matchingImage.url,
+                score: matchingImage.score,
+              };
+              fullMatchingScores.push(score);
+            }
+          });
         } else {
-          functions.logger.info("fullMatchingImages is null or < 0");
+          functions.logger.info("*** 0 full matching Image detected ***");
+        }
+
+        if (webDetection.partialMatchingImages &&
+          webDetection.partialMatchingImages.length > 0) {
+          functions.logger.info("*** Partial Matching Images detected ***");
+          webDetection.partialMatchingImages.forEach((matchingImage) => {
+            if (matchingImage.url && matchingImage.score) {
+              functions.logger.info(` URL : ${matchingImage.url}`);
+              functions.logger.info(` Score: ${matchingImage.score}`);
+              const score = {
+                tag: matchingImage.url,
+                score: matchingImage.score,
+              };
+              partialMatchingScores.push(score);
+            }
+          });
+        } else {
+          functions.logger.info("*** 0 partial matching Image detected ***");
+        }
+
+        if (entities && entities.length) {
+          functions.logger.info(`*** Web entities detected: 
+          ${entities.length}`);
+          entities.forEach((entity) => {
+            if (entity.description && entity.score) {
+              functions.logger.info(` Description : ${entity.description}`);
+              functions.logger.info(` Score: ${entity.score}`);
+              const score = {
+                tag: entity.description,
+                score: entity.score,
+              };
+              entityScores.push(score);
+            }
+          });
+        } else {
+          functions.logger.info("*** 0 entity detected ***");
         }
       } else {
         functions.logger.info("Web Detection is null");
       }
 
       entry.set({
-        tags: scores,
+        fullMatching: fullMatchingScores,
+        partialMatching: partialMatchingScores,
+        entities: entityScores,
         isAnalysed: true,
       });
 
