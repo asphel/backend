@@ -45,14 +45,18 @@ export const processImage = functions.storage.object().onFinalize(
       const webDetection = result?.webDetection;
 
       if (webDetection) {
+        const fullMatchingImages = webDetection.fullMatchingImages;
+        const partialMatchingImages = webDetection.partialMatchingImages;
         const entities = webDetection.webEntities;
+
         functions.logger.info(`*** Web detection for 
         ${fileBucket}/${filePath} ***`);
 
-        if (webDetection.fullMatchingImages &&
-          webDetection.fullMatchingImages.length > 0) {
-          functions.logger.info("*** Full Matching Images detected ***");
-          webDetection.fullMatchingImages.forEach((matchingImage) => {
+        if (fullMatchingImages &&
+          fullMatchingImages.length > 0) {
+          functions.logger.info(`*** ${fullMatchingImages.length} 
+          full matching images detected ***`);
+          fullMatchingImages.forEach((matchingImage) => {
             if (matchingImage.url && matchingImage.score) {
               functions.logger.info(` URL : ${matchingImage.url}`);
               functions.logger.info(` Score: ${matchingImage.score}`);
@@ -64,13 +68,13 @@ export const processImage = functions.storage.object().onFinalize(
             }
           });
         } else {
-          functions.logger.info("*** 0 full matching Image detected ***");
+          functions.logger.info("*** 0 full matching image detected ***");
         }
 
-        if (webDetection.partialMatchingImages &&
-          webDetection.partialMatchingImages.length > 0) {
-          functions.logger.info("*** Partial Matching Images detected ***");
-          webDetection.partialMatchingImages.forEach((matchingImage) => {
+        if (partialMatchingImages && partialMatchingImages.length > 0) {
+          functions.logger.info(`*** ${partialMatchingImages} 
+          partial matching images detected ***`);
+          partialMatchingImages.forEach((matchingImage) => {
             if (matchingImage.url && matchingImage.score) {
               functions.logger.info(` URL : ${matchingImage.url}`);
               functions.logger.info(` Score: ${matchingImage.score}`);
@@ -82,12 +86,12 @@ export const processImage = functions.storage.object().onFinalize(
             }
           });
         } else {
-          functions.logger.info("*** 0 partial matching Image detected ***");
+          functions.logger.info("*** 0 partial matching image detected ***");
         }
 
         if (entities && entities.length) {
-          functions.logger.info(`*** Web entities detected: 
-          ${entities.length}`);
+          functions.logger.info(`*** ${entities.length} 
+          Web entities detected ***`);
           entities.forEach((entity) => {
             if (entity.description && entity.score) {
               functions.logger.info(` Description : ${entity.description}`);
@@ -118,6 +122,4 @@ export const processImage = functions.storage.object().onFinalize(
       functions.logger.error("Web Detection Error:", error);
       return null;
     }
-
-    return null;
   });
